@@ -1,0 +1,449 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>محاكاة روبوت فحص المنتجات بالذكاء الاصطناعي</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Tahoma,Arial,sans-serif;
+  background:#eef3f9;color:#18314f;
+}
+header{
+  background:#103b66;color:white;text-align:center;
+  padding:24px 12px;
+}
+header h1{margin:0 0 8px;font-size:25px}
+header p{margin:0;color:#d5e6fa}
+main{max-width:1150px;margin:auto;padding:18px}
+.panel{
+  background:white;border-radius:14px;padding:18px;
+  margin-bottom:18px;box-shadow:0 3px 12px #17365412;
+}
+h2{font-size:19px;margin:0 0 16px}
+.controls{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:15px;
+}
+label{display:block;font-size:14px;font-weight:bold;margin-bottom:8px}
+select,input{width:100%;padding:10px;border:1px solid #cbd5e1;
+  border-radius:8px;background:white}
+.buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+button{
+  border:0;border-radius:8px;padding:12px 17px;
+  cursor:pointer;font-weight:bold;font-size:14px;
+}
+.primary{background:#1265c0;color:white}
+.secondary{background:#e5edf7;color:#153e68}
+.danger{background:#ffe5e5;color:#b42323}
+button:disabled{opacity:.5;cursor:not-allowed}
+.conveyor{
+  background:#e7edf4;border-radius:12px;padding:24px 12px;
+  overflow:hidden;
+}
+.belt{
+  height:120px;background:#34465b;border-radius:12px;
+  display:flex;align-items:center;justify-content:space-around;
+  gap:8px;padding:10px;position:relative;
+  border-top:7px solid #9eabb9;border-bottom:7px solid #9eabb9;
+}
+.product{
+  width:55px;height:55px;min-width:42px;border-radius:12px;
+  background:#2084e8;border:3px solid #a5d3ff;
+  display:flex;align-items:center;justify-content:center;
+  color:white;font-size:23px;position:relative;
+  transition:transform .4s;
+}
+.product.bad{background:#e74444;border-color:#ffaaaa}
+.product.scanning{box-shadow:0 0 0 5px #ffce44;transform:translateY(-8px)}
+.stations{
+  display:grid;grid-template-columns:repeat(4,1fr);
+  gap:8px;margin-top:13px;text-align:center;
+}
+.station{
+  background:#f2f6fb;padding:12px 4px;border-radius:8px;
+  font-size:13px;line-height:1.8;
+}
+.station span{font-size:24px;display:block}
+.metrics{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));
+  gap:12px;
+}
+.metric{padding:17px;border-radius:10px;background:#f3f7fc}
+.metric.good{background:#e6f7ed}
+.metric.bad{background:#ffeded}
+.metric h3{margin:0;font-size:13px;font-weight:normal}
+.metric strong{font-size:29px;display:block;margin-top:8px}
+.status{font-weight:bold;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:center;padding:11px 5px;border-bottom:1px solid #e5eaf1}
+th{background:#f2f6fb}
+.table-wrap{overflow-x:auto}
+footer{text-align:center;color:#64748b;padding:18px;font-size:12px}
+.note{font-size:13px;line-height:1.9;color:#64748b}
+#message{margin-top:12px;min-height:24px;font-size:14px}
+@media(max-width:600px){
+  header h1{font-size:20px}
+  main{padding:10px}
+  .stations{grid-template-columns:repeat(2,1fr)}
+  .belt{justify-content:flex-start}
+}
+</style>
+</head>
+
+<body>
+<header>
+  <h1>🤖 روبوت فحص المنتجات بالذكاء الاصطناعي</h1>
+  <p>AI Quality Inspection — Simulation</p>
+</header>
+
+<main>
+<section class="panel">
+  <h2>⚙️ إعدادات المحاكاة</h2>
+  <div class="controls">
+    <div>
+      <label for="defectRate">نسبة المنتجات المعيوبة</label>
+      <select id="defectRate">
+        <option value="10">10%</option>
+        <option value="20" selected>20%</option>
+        <option value="30">30%</option>
+        <option value="50">50%</option>
+      </select>
+    </div>
+    <div>
+      <label for="sensitivity">احتمال اكتشاف العيب في المحاكاة</label>
+      <select id="sensitivity">
+        <option value="70">70%</option>
+        <option value="85">85%</option>
+        <option value="95" selected>95%</option>
+        <option value="99">99%</option>
+      </select>
+    </div>
+    <div>
+      <label for="falseAlarm">احتمال رفض منتج سليم بالخطأ</label>
+      <select id="falseAlarm">
+        <option value="1" selected>1%</option>
+        <option value="5">5%</option>
+        <option value="10">10%</option>
+      </select>
+    </div>
+    <div>
+      <label for="productType">نوع المنتج الافتراضي</label>
+      <select id="productType">
+        <option value="cap">غطاء بلاستيك</option>
+        <option value="box">علبة</option>
+        <option value="bottle">زجاجة</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="buttons">
+    <button class="primary" id="oneBtn" onclick="runOne()">▶ فحص منتج واحد</button>
+    <button class="primary" id="batchBtn" onclick="runBatch()">▶ فحص 10 منتجات</button>
+    <button class="secondary" onclick="exportCSV()">⬇ تصدير النتائج CSV</button>
+    <button class="danger" id="resetBtn" onclick="resetAll()">إعادة ضبط</button>
+  </div>
+  <div id="message" role="status">النظام جاهز لبدء الفحص.</div>
+</section>
+
+<section class="panel">
+  <h2>🏭 خط الإنتاج الافتراضي</h2>
+  <div class="conveyor">
+    <div class="belt" id="belt">
+      <div class="product">📦</div>
+      <div class="product">📦</div>
+      <div class="product bad">📦</div>
+      <div class="product">📦</div>
+      <div class="product">📦</div>
+      <div class="product bad">📦</div>
+    </div>
+    <div class="stations">
+      <div class="station"><span>📥</span>وصول المنتج</div>
+      <div class="station"><span>📷</span>التقاط الصورة</div>
+      <div class="station"><span>🧠</span>تحليل AI</div>
+      <div class="station"><span>🔀</span>فرز المنتج</div>
+    </div>
+  </div>
+  <p class="note">
+    الأزرق يمثل منتجًا سليمًا في الرسم، والأحمر يمثل منتجًا معيبًا.
+    حالة المنتج التي تظهر بعد الفحص تعتمد على نتيجة المحاكاة.
+  </p>
+</section>
+
+<section class="panel">
+  <h2>📊 نتائج الفحص المباشرة</h2>
+  <div class="metrics">
+    <div class="metric">
+      <h3>إجمالي المنتجات المفحوصة</h3>
+      <strong id="total">0</strong>
+    </div>
+    <div class="metric good">
+      <h3>تم تصنيفها سليمة</h3>
+      <strong id="good">0</strong>
+    </div>
+    <div class="metric bad">
+      <h3>تم تصنيفها معيبة</h3>
+      <strong id="bad">0</strong>
+    </div>
+    <div class="metric">
+      <h3>عيوب لم تُكتشف</h3>
+      <strong id="missed">0</strong>
+    </div>
+    <div class="metric">
+      <h3>رفض السليم بالخطأ</h3>
+      <strong id="falseReject">0</strong>
+    </div>
+    <div class="metric">
+      <h3>زمن المحاكاة</h3>
+      <strong id="time">0.0 s</strong>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>📝 سجل الفحص</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>رقم المنتج</th>
+          <th>الحالة الحقيقية</th>
+          <th>قرار النظام</th>
+          <th>النتيجة</th>
+          <th>العيب الافتراضي</th>
+        </tr>
+      </thead>
+      <tbody id="log">
+        <tr><td colspan="5">لم يتم فحص أي منتج حتى الآن.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>🔍 ماذا يحدث أثناء الفحص؟</h2>
+  <div id="steps" class="note">
+    1. وصول المنتج إلى الحساس.<br>
+    2. التقاط الصورة بالكاميرا الافتراضية.<br>
+    3. معالجة الصورة وتشغيل قرار الفحص الافتراضي.<br>
+    4. فرز المنتج وتسجيل النتيجة.
+  </div>
+</section>
+
+<section class="panel">
+  <h2>📈 تقييم نتائج المحاكاة</h2>
+  <div class="metrics">
+    <div class="metric">
+      <h3>Recall — اكتشاف العيوب</h3>
+      <strong id="recall">—</strong>
+    </div>
+    <div class="metric">
+      <h3>Precision — صحة قرارات الرفض</h3>
+      <strong id="precision">—</strong>
+    </div>
+    <div class="metric">
+      <h3>نسبة النجاح الإجمالية</h3>
+      <strong id="accuracy">—</strong>
+    </div>
+  </div>
+  <p class="note">
+    المقاييس هنا محسوبة من نتائج المحاكاة المولدة عشوائيًا.
+    لا تمثل دقة نموذج ذكاء اصطناعي حقيقي.
+  </p>
+</section>
+</main>
+
+<footer>
+  AI Quality Inspection Simulator — Prototype for Educational Use
+</footer>
+
+<script>
+let records = [];
+let running = false;
+let productId = 0;
+let startTime = null;
+let elapsed = 0;
+let batchToken = 0;
+
+const $ = id => document.getElementById(id);
+
+function updateStats(){
+  const total = records.length;
+  const actualBad = records.filter(r=>r.actualBad).length;
+  const actualGood = total - actualBad;
+  const detected = records.filter(r=>r.actualBad && r.predictedBad).length;
+  const missed = records.filter(r=>r.actualBad && !r.predictedBad).length;
+  const falseReject = records.filter(r=>!r.actualBad && r.predictedBad).length;
+  const trueGood = records.filter(r=>!r.actualBad && !r.predictedBad).length;
+  const predictedBad = records.filter(r=>r.predictedBad).length;
+  const correct = detected + trueGood;
+
+  $("total").textContent = total;
+  $("good").textContent = records.filter(r=>!r.predictedBad).length;
+  $("bad").textContent = predictedBad;
+  $("missed").textContent = missed;
+  $("falseReject").textContent = falseReject;
+  $("time").textContent = elapsed.toFixed(1)+" s";
+
+  $("recall").textContent = actualBad
+    ? (100*detected/actualBad).toFixed(1)+"%" : "—";
+  $("precision").textContent = predictedBad
+    ? (100*detected/predictedBad).toFixed(1)+"%" : "—";
+  $("accuracy").textContent = total
+    ? (100*correct/total).toFixed(1)+"%" : "—";
+
+  $("log").innerHTML = records.length
+    ? records.slice().reverse().slice(0,30).map(r=>`
+      <tr>
+        <td>${r.id}</td>
+        <td>${r.actualBad?"معيوب":"سليم"}</td>
+        <td style="color:${r.predictedBad?"#c62828":"#16804a"}">
+          ${r.predictedBad?"رفض":"قبول"}
+        </td>
+        <td>${r.correct?"صحيح":"خطأ"}</td>
+        <td>${r.defect}</td>
+      </tr>`).join("")
+    : '<tr><td colspan="5">لم يتم فحص أي منتج حتى الآن.</td></tr>';
+}
+
+function defectName(bad){
+  if(!bad) return "لا يوجد";
+  const defects = ["خدش","تشوه","جزء ناقص"];
+  return defects[Math.floor(Math.random()*defects.length)];
+}
+
+function makeProduct(){
+  const actualBad = Math.random() <
+    Number($("defectRate").value)/100;
+
+  const predictedBad = actualBad
+    ? Math.random() < Number($("sensitivity").value)/100
+    : Math.random() < Number($("falseAlarm").value)/100;
+
+  return {
+    id: ++productId,
+    actualBad,
+    predictedBad,
+    defect: defectName(actualBad),
+    correct: actualBad === predictedBad
+  };
+}
+
+function drawBelt(r){
+  const belt = $("belt");
+  const p = document.createElement("div");
+  p.className = "product scanning";
+  p.textContent = $("productType").value==="bottle" ? "🧴" :
+                  $("productType").value==="box" ? "📦" : "🔵";
+  p.title = "المنتج رقم "+r.id;
+  belt.appendChild(p);
+
+  if(belt.children.length>9) belt.removeChild(belt.firstElementChild);
+  setTimeout(()=>{
+    p.classList.remove("scanning");
+    p.classList.toggle("bad",r.predictedBad);
+    p.style.transform="translateY(0)";
+    p.textContent=r.predictedBad?"🔴":"🔵";
+  },350);
+}
+
+function setBusy(value){
+  running=value;
+  $("oneBtn").disabled=value;
+  $("batchBtn").disabled=value;
+  $("resetBtn").disabled=value;
+}
+
+function delay(ms){
+  return new Promise(resolve=>setTimeout(resolve,ms));
+}
+
+async function inspect(){
+  const r=makeProduct();
+  $("message").textContent="جاري فحص المنتج رقم "+r.id+"...";
+  $("steps").innerHTML =
+    "① وصول المنتج إلى الحساس.<br>"+
+    "② التقاط الصورة الافتراضية.<br>"+
+    "③ تحليل المنتج وتقدير وجود العيب.<br>"+
+    "④ "+(r.predictedBad
+      ?"تحويل المنتج إلى مسار الرفض."
+      :"السماح للمنتج بالمرور.")+
+    "<br>⑤ تسجيل النتيجة في سجل الفحص.";
+
+  drawBelt(r);
+  await delay(500);
+  records.push(r);
+  elapsed += 0.5;
+  updateStats();
+  $("message").textContent =
+    "المنتج "+r.id+": "+(r.predictedBad?"معيوب — رفض":"سليم — قبول")+
+    (r.correct?" | القرار صحيح":" | القرار خاطئ");
+}
+
+async function runOne(){
+  if(running)return;
+  setBusy(true);
+  try{await inspect();}
+  finally{setBusy(false);}
+}
+
+async function runBatch(){
+  if(running)return;
+  const token=++batchToken;
+  setBusy(true);
+  try{
+    for(let i=0;i<10;i++){
+      if(token!==batchToken)break;
+      await inspect();
+      await delay(200);
+    }
+    $("message").textContent="انتهى فحص الدفعة.";
+  }finally{setBusy(false);}
+}
+
+function resetAll(){
+  if(running)return;
+  records=[];
+  productId=0;
+  elapsed=0;
+  $("belt").innerHTML="";
+  $("steps").textContent="في انتظار بدء الفحص.";
+  $("message").textContent="تمت إعادة ضبط المحاكاة.";
+  updateStats();
+}
+
+function exportCSV(){
+  if(!records.length){
+    $("message").textContent="لا توجد نتائج لتصديرها.";
+    return;
+  }
+  const rows=[
+    ["Product ID","Actual Status","Predicted Status","Correct","Defect"],
+    ...records.map(r=>[
+      r.id,
+      r.actualBad?"Defective":"Good",
+      r.predictedBad?"Reject":"Accept",
+      r.correct?"Yes":"No",
+      r.defect
+    ])
+  ];
+  const csv="\uFEFF"+rows.map(row=>row.map(v=>
+    '"'+String(v).replace(/"/g,'""')+'"'
+  ).join(",")).join("\r\n");
+
+  const blob=new Blob([csv],{type:"text/csv;charset=utf-8;"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="inspection_results.csv";
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+updateStats();
+</script>
+</body>
+</html>
